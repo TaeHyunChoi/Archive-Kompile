@@ -3,38 +3,30 @@ using DataStruct;
 
 public partial class SceneMgr
 {
-    private CanvasGroup mCurtainCanvas;
+    private static CanvasGroup mCurtainCanvas;
 
     public void LoadSceneAsync(EGameStateFlag next, int code = -1)
     {
-        Main.InputMgr.Updater      = null;
-        Main.InputMgr.FixedUpdater = null;
+        Main.ClearInput();
 
         switch (next)
         {
             case EGameStateFlag.Opening:
-                LoadOpeningScene opening = new LoadOpeningScene(mCurtainCanvas);
-                CoroutineUpdater.SetHandler(new CCoroutine<LoadOpeningScene>(opening));
+                IEInitOpeningScene opening = new IEInitOpeningScene(mCurtainCanvas);
+                CoroutineUpdater.SetHandler(new CCoroutine<IEInitOpeningScene>(opening));
                 break;
-            case EGameStateFlag.Field:
-                if (true == DataTable.TryGetMapData(code, out MapData map))
-                {
-                    LoadFieldScene level = new LoadFieldScene(mCurtainCanvas, map);
-                    CoroutineUpdater.SetHandler(new CCoroutine<LoadFieldScene>(level));
-                }
-                else
-                {
-                    Debug.LogError("Wrong Field Map code: " + code);
-                    return;
-                }
+            case EGameStateFlag.EnterGame:
+                //TODO: Load(or Get) Play data. => chaper: 
+                IEEnterIngame level = new IEEnterIngame(chapter: 0);
+                CoroutineUpdater.SetHandler(new CCoroutine<IEEnterIngame>(level));
                 break;
         }
     }
 
-    public SceneMgr(Transform transform)
+    public SceneMgr(Transform transformCanvas)
     {
-        transform = transform.GetChild(0);
-        mCurtainCanvas = transform.GetComponent<CanvasGroup>();
+        transformCanvas = transformCanvas.GetChild(0);
+        mCurtainCanvas = transformCanvas.GetComponent<CanvasGroup>();
         mCurtainCanvas.gameObject.SetActive(false);
     }
 }

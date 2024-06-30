@@ -4,7 +4,7 @@ using static Index.IDxInput;
 
 public partial class OnOpening // Coroutine
 {
-    private class OpeningLogo : IRoutineUpdater, IInputHandler
+    private class IEOpeningLogo : IRoutineUpdater, IInputHandler
     {
         private Image mLogoImage;
         private float mWaitTime;
@@ -43,7 +43,8 @@ public partial class OnOpening // Coroutine
                         mLogoImage.color = new Color(1f, 1f, 1f, mAlpha);
                         return index;
                     }
-                    Main.InputMgr.Updater = null;
+
+                    Main.ClearInput();
                     instance.Set();
                     break;
                 default:
@@ -53,24 +54,20 @@ public partial class OnOpening // Coroutine
         }
         public void Input(EInput input)
         {
-            //정해진 입력 이외는 처리하지 않음
-            if (false == Compare(input, EInput.ENTER, EInput.ACTION))
+            if (false == input.HaveFlag(EInput.ENTER, EInput.ACTION))
             {
                 return;
             }
 
-            //현재 코루틴의 상태값이 0일 때에만 입력 처리 (0 == state)
             if (0 == mState)
             {
                 mAlpha = 1f;
                 mLogoImage.color = new Color(1f, 1f, 1f, mAlpha);
 
-                //코루틴 단계를 0에서 2로 점프한다.
                 mState = 2;
             }
         }
-
-        public OpeningLogo(Transform transform)
+        public IEOpeningLogo(Transform transform)
         {
             transform.gameObject.SetActive(true);
             mLogoImage = transform.GetComponent<Image>();
@@ -79,10 +76,10 @@ public partial class OnOpening // Coroutine
             mWaitTime = 0;
             mState = 0;
 
-            Main.InputMgr.Updater = this;
+            Main.SetInput(this);
         }
     }
-    private class OpeningDemo : IRoutineUpdater, IInputHandler
+    private class IEOpeningDemo : IRoutineUpdater, IInputHandler
     {
         public int MoveNext(int index)
         {
@@ -93,12 +90,12 @@ public partial class OnOpening // Coroutine
         {
 
         }
-        public OpeningDemo(Transform transform)
+        public IEOpeningDemo(Transform transform)
         {
             Debug.Log("Need to dev: Play Demo");
         }
     }
-    private class OpeningTitle : IRoutineUpdater
+    private class IEOpeningTitle : IRoutineUpdater
     {
         private Image[]         mImages; //logo_upper, logo_lower, flash
         private RectTransform[] mRects;
@@ -111,29 +108,6 @@ public partial class OnOpening // Coroutine
         private float mDist;
         private float mAlpah = 0;
 
-        public OpeningTitle(Transform transform)
-        {
-            mRects = new RectTransform[2];
-            mPositions = new Vector2[2];
-            mDist = mLogoSpeed * mMovingTime;
-
-            //all images.alpha = 0f;
-            mImages = transform.GetComponentsInChildren<Image>();
-            for (int i = 0; i < mImages.Length; ++i)
-            {
-                mImages[i].color = new Color(1f, 1f, 1f, 0f);
-            }
-
-            //logo_upper
-            mRects[0] = mImages[0].GetComponent<RectTransform>();
-            mRects[0].anchoredPosition = new Vector3(mRects[0].anchoredPosition.x, mRects[0].anchoredPosition.y + mDist);
-            mPositions[0] = mRects[0].anchoredPosition;
-
-            //logo_lower
-            mRects[1] = mImages[1].GetComponent<RectTransform>();
-            mRects[1].anchoredPosition = new Vector3(mRects[1].anchoredPosition.x, mRects[1].anchoredPosition.y - mDist);
-            mPositions[1] = mRects[1].anchoredPosition;
-        }
         public int MoveNext(int index)
         {
             switch (index)
@@ -177,6 +151,29 @@ public partial class OnOpening // Coroutine
             }
 
             return index + 1;
+        }
+        public IEOpeningTitle(Transform transform)
+        {
+            mRects = new RectTransform[2];
+            mPositions = new Vector2[2];
+            mDist = mLogoSpeed * mMovingTime;
+
+            //all images.alpha = 0f;
+            mImages = transform.GetComponentsInChildren<Image>();
+            for (int i = 0; i < mImages.Length; ++i)
+            {
+                mImages[i].color = new Color(1f, 1f, 1f, 0f);
+            }
+
+            //logo_upper
+            mRects[0] = mImages[0].GetComponent<RectTransform>();
+            mRects[0].anchoredPosition = new Vector3(mRects[0].anchoredPosition.x, mRects[0].anchoredPosition.y + mDist);
+            mPositions[0] = mRects[0].anchoredPosition;
+
+            //logo_lower
+            mRects[1] = mImages[1].GetComponent<RectTransform>();
+            mRects[1].anchoredPosition = new Vector3(mRects[1].anchoredPosition.x, mRects[1].anchoredPosition.y - mDist);
+            mPositions[1] = mRects[1].anchoredPosition;
         }
     }
 }

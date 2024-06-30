@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -9,15 +9,22 @@ public class AssetMgr
     private static Dictionary<int,    AsyncOperationHandle> mObjectHandlers = new Dictionary<int,    AsyncOperationHandle>();
     private static Dictionary<string, AsyncOperationHandle> mAssetHandler   = new Dictionary<string, AsyncOperationHandle>();
 
-    // Init/Load Asset
+    /* Load Asset */
     public static async Task<GameObject> InstantiateGameObjectAsync(string address, Transform parent, bool isOn)
     {
-        AsyncOperationHandle<GameObject> handle = Addressables.InstantiateAsync(address, parent);
-        GameObject go = await handle.Task;
-        go.SetActive(isOn);
+        try
+        {
+            AsyncOperationHandle<GameObject> handle = Addressables.InstantiateAsync(address, parent);
+            GameObject go = await handle.Task;
+            go.SetActive(isOn);
 
-        mObjectHandlers.Add(go.GetInstanceID(), handle);
-        return go;
+            mObjectHandlers.Add(go.GetInstanceID(), handle);
+            return go;
+        }
+        catch
+        {
+            return null;
+        }
     }
     private static Task<T> LoadAssetAsync<T>(string address)
     {
@@ -25,17 +32,15 @@ public class AssetMgr
         mAssetHandler.Add(address, handle);
         return handle.Task;
     }
-
-    // Spawn Unit
-    public static async Task<T> SpawnUnit<T>(int index, Transform parent) where T : UnitBase, new()
+    public static async Task<T> SpawnUnit<T>(int code, Transform parent) where T : UnitBase, new()
     {
-        string code = GetAssetAddress(EAssetType.Prefab, (int)EPrefabType.UnitBase);
-        GameObject obj = await InstantiateGameObjectAsync(code, parent, true);
+        string address = GetAssetAddress(EAssetType.Prefab, (int)EPrefabType.UnitBase);
+        GameObject obj = await InstantiateGameObjectAsync(address, parent, true);
 
         T unit = new();
-        unit.Awake(index, obj.transform);
+        unit.Awake(code, obj.transform);
 
-        string address = GetAssetAddress(EAssetType.AnimCtrl, index);
+        address = GetAssetAddress(EAssetType.AnimCtrl, code);
         UnityEngine.Assertions.Assert.IsNotNull(address, "Can`t Find Asset Address: " + address);
         Task<RuntimeAnimatorController> taskController = LoadAssetAsync<RuntimeAnimatorController>(address);
         await taskController;
@@ -46,17 +51,18 @@ public class AssetMgr
         taskController.Dispose();
         return unit;
     }
+
+    /* Get Address */
     public static string GetAssetAddress(EAssetType type, int code)
     {
         int index = (byte)type * 10000 + code;
 
-        // Visual Studio 2019의 추천에 따라봄 (switch 구문을 식으로 표시)
         return index switch
         {
             // Unit
-            01_0000 => "AnimCtrl_Ataho",
-            01_0001 => "AnimCtrl_Linxhang",
-            01_0002 => "AnimeCtrl_Smashu",
+            01_0001 => "AnimCtrl_Ataho",
+            01_0002 => "AnimCtrl_Linxhang",
+            01_0003 => "AnimeCtrl_Smashu",
 
             // Content
             02_0001 => "UnitBase",
@@ -65,12 +71,15 @@ public class AssetMgr
             // UI
             03_0000 => "UITitle",
 
+            // BATTLE MAP
+            04_0000 => "Battle000",
+
             // Default
             _ => null,
-        };
+        };;
     }
 
-    // Release Asset
+    /* Release Asset */
     public static bool ReleaseGameObject(int instanceID)
     {
         Addressables.Release(mObjectHandlers[instanceID]);

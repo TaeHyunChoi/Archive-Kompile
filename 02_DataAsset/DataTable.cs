@@ -7,51 +7,49 @@ using DataStruct;
 
 public static class DataTable
 {
-    public static List<SkillData> SkillTable { get; private set; }
-    public static List<ItemData>  ItemTable  { get; private set; }
-    public static List<UnitData>  UnitTable  { get; private set; }
-    public static List<MapData>   MapTable   { get; private set; }
+    /* table */
+    public static List<UnitData> UnitTable { get; private set; } = new();
+    public static List<MapData>  MapTable  { get; private set; } = new();
+    //...
 
-    public static void LoadTable()
+    /* I/O binary file */
+    public static void WriteTable<T>(string filePath, List<T> dataList) where T : struct, IDataSetter<T>
     {
-        SkillTable = ReadBinary<SkillData>("SkillData.bin");
-        ItemTable  = ReadBinary<ItemData>("ItemData.bin");
-        UnitTable  = ReadBinary<UnitData>("UnitData.bin");
-        MapTable   = ReadBinary<MapData>("MapData.bin");
-    }
-    public static List<T> ReadBinary<T>(string fileName) where T : struct, IDataSetter
-    {
-        string path = Application.dataPath + "/Resources/bin/" + fileName;
-
-        BinaryFormatter formatter = new BinaryFormatter();
-        FileStream stream = new FileStream(path, FileMode.Open);
-        List<T> table = (List<T>)formatter.Deserialize(stream);
-        stream.Close();
-
-        return table;
-    }
-    private static void WriteBinary<T>(string path, List<T> table) where T : struct, IDataSetter
-    {
-        BinaryFormatter formatter = new BinaryFormatter();
-        FileStream stream = new FileStream(path, FileMode.Create);
-        formatter.Serialize(stream, table);
-        stream.Close();
-    }
-    public static bool TryGetMapData(int code, out MapData map)
-    {
-        for (int i = 0; i < MapTable.Count; ++i)
+        using (BinaryWriter writer = new BinaryWriter(File.Open(filePath, FileMode.Create)))
         {
-            map = MapTable[i];
-            if (code == map.Code)
+            foreach (T data in dataList)
             {
-                return true;
+                data.WriteAsBinary(writer);
+            }
+        }
+    }
+    private static List<T> ReadTable<T>(string filePath) where T : struct, IDataSetter<T>
+    {
+        List<T> table = new List<T>();
+
+        using (BinaryReader reader = new BinaryReader(File.Open(filePath, FileMode.Open)))
+        {
+            while (reader.BaseStream.Position != reader.BaseStream.Length)
+            {
+                T data = new();
+                data.ReadAsBinary(reader);
+                table.Add(data);
             }
         }
 
-        map = default(MapData);
-        return false;
+        return table;
     }
-    public static Dictionary<int, T> LoadMappingData<T>(string fileName) where T : struct
+
+
+    /* load data */
+    public static void LoadContentTable()
+    {
+        string path = Application.dataPath + "/Resources/bin/";
+
+        UnitTable = ReadTable<UnitData>(path + "UnitData.bin");
+        MapTable  = ReadTable<MapData>(path + "MapData.bin");
+    }
+    public static Dictionary<int, T> LoadMappingTable<T>(string fileName) where T : struct
     {
         string filePath = Path.Combine(Application.dataPath, "Resources", "bin", "MapTileData", fileName + ".dat");
         if (File.Exists(filePath))
@@ -65,30 +63,56 @@ public static class DataTable
             fileStream.Close();
             return map;
         }
-        else
-        {
-            Debug.LogError("파일이 존재하지 않습니다.");
-        }
 
+        Debug.LogError("파일이 존재하지 않습니다. " + fileName);
         return null;
     }
 
 
-#if UNITY_EDITOR || UNITY_EDITOR_64 || UNITY_EDITOR_WIN
+    /* try get */
+    public static bool TryGetMapData(int code, out MapData map)
+    {
+        for (int i = 0; i < MapTable.Count; ++i)
+        {
+            map = MapTable[i];
+            if (code == map.Code)
+            {
+                return true;
+            }
+        }
 
+        map = default;
+        return false;
+    }
+    public static bool TryGetUnitData(int code, out UnitData unit)
+    {
+        for (int i = 0; i < UnitTable.Count; ++i)
+        {
+            unit = UnitTable[i];
+            if (code == unit.Code)
+            {
+                return true;
+            }
+        }
+
+        unit = default;
+        return false;
+    }
+
+
+    #region only for dev
+#if UNITY_EDITOR || UNITY_EDITOR_64 || UNITY_EDITOR_WIN
     // (for 기획자) custom editor 사용하여 csv 파일을 .bin 파일로 변환
     public static void LoadCSVTable()
     {
-        SkillTable = LoadTable<SkillData>("SkillData");
-        ItemTable  = LoadTable<ItemData>("ItemData");
-        UnitTable  = LoadTable<UnitData>("UnitData");
-        MapTable   = LoadTable<MapData>("MapData");
+        UnitTable = LoadTable<UnitData>("UnitData");
+        MapTable = LoadTable<MapData>("MapData");
     }
-    private static List<T> LoadTable<T>(string fileName) where T : IDataSetter, new()
+    private static List<T> LoadTable<T>(string fileName) where T : struct, IDataSetter<T>
     {
-        List<Dictionary<string, string>> table = new List<Dictionary<string, string>>();
+        List<Dictionary<string, string>> table = new();
         TextAsset csv = Resources.Load<TextAsset>("CSV/" + fileName);
-        StringReader reader = new StringReader(csv.text);
+        StringReader sr = new StringReader(csv.text);
         StringBuilder sb = new StringBuilder();
 
         //Setting
@@ -99,15 +123,17 @@ public static class DataTable
         bool isSplit;       //분류 여부 (대사 등 본문의 ,와 CSV 구분쉼표를 구분하기 위함)
 
         //Column Index
-        line = reader.ReadLine(); //첫줄 날리기
+        line = sr.ReadLine(); //첫줄 날리기
         columns = line.Split(',');
 
         //Content
         while (true)
         {
-            line = reader.ReadLine();
+            line = sr.ReadLine();
             if (line == null)
+            {
                 break;
+            }
 
             Dictionary<string, string> data = new Dictionary<string, string>();
             chars = line.ToCharArray();
@@ -144,20 +170,20 @@ public static class DataTable
         for (int i = 0; i < table.Count; ++i)
         {
             T tData = new T();
-            tData.Set(table[i]);
+            tData.SetByCSV(table[i]);
             list.Add(tData);
         }
 
         return list;
     }
-    public static void WriteBinaryFiles()
+    public static void WriteBinaryTables()
     {
         string path = Application.dataPath + "/Resources/bin/";
 
-        WriteBinary(path + "SkillData.bin", SkillTable);
-        WriteBinary(path + "ItemData.bin", ItemTable);
-        WriteBinary(path + "UnitData.bin", UnitTable);
-        WriteBinary(path + "MapData.bin", MapTable);
+        WriteTable(path + "UnitData.bin", UnitTable);
+        WriteTable(path + "MapData.bin", MapTable);
+
+        Debug.Log($"[Done] Write Binary File;");
     }
 
     // map sampling
@@ -172,4 +198,5 @@ public static class DataTable
         fileStream.Close();
     }
 #endif
+    #endregion
 }

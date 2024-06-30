@@ -8,6 +8,8 @@ public class MapTileComponent : MonoBehaviour
     public byte Layer { get => layer; }
 
 #if UNITY_EDITOR || UNITY_EDITOR_64 || UNITY_EDITOR_WIN
+    [SerializeField]
+    private byte code;
     [SerializeField] 
     private float scale = 1f;
     [SerializeField] 
@@ -16,15 +18,15 @@ public class MapTileComponent : MonoBehaviour
     private byte valueLayer;
     [SerializeField] 
     private int  valueInteract;
-#endif
-#if UNITY_EDITOR || UNITY_EDITOR_64 || UNITY_EDITOR_WIN
+
     private void Awake()
     {
         Mesh mesh = transform.GetComponent<MeshFilter>().mesh;
 
-        int info = (1f != scale) ? (1 << SHIFT_INFO_SCALE) : 0;
-        int trigger = (int)this.trigger;
+        int info = 0;
+        info |= (1f != scale) ? (1 << SHIFT_INFO_SCALE) : 0;
 
+        int trigger = (int)this.trigger;
         if (0 != (ETileTriggerType.Scale & this.trigger))
         {
             int scaleDown = (1f == scale) ? 1 : 0;
@@ -39,7 +41,7 @@ public class MapTileComponent : MonoBehaviour
             trigger |= valueInteract << SHIFT_TRIGGER_INTERACT_VALUE;
         }
 
-        Dev_MapSampler.InitTile(transform, mesh, scale, layer, info, trigger);
+        Dev_MapSampler.InitTile(transform, mesh, scale, layer, code, info, trigger);
     }
 #endif
 }

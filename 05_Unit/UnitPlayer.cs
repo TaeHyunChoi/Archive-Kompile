@@ -1,23 +1,60 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using DataStruct;
 using CMathf;
+using static Index.IDxInput;
+using Unity.VisualScripting;
+using Index;
 
 public class UnitPlayer : UnitBase
 {
+    private enum EMoveState
+    {
+        Idle,
+        Stop,
+        Move
+    }
+
     //자동 방향 전환 시 탐색 각도. 시계방향 기준
     private static  readonly float[] INTERVAL_ROTATION  = new float[] { 0, 45f, -45f, 90f, -90f }; 
     private static readonly float   SPEED_MOVE = 3f;
 
+    private EMoveState mState;
     private EAnimeCodeToString mAnimeCurrentCode = EAnimeCodeToString.IDLE_FRONT;
     private Vector3 mDirectionBefore = new Vector3(-1f, 0, -1f);
     private float   mScale = 1f;
     private int     mLayer = 0;
 
+    public override void Awake(int codeUnit, Transform transform)
+    {
+        base.Awake(codeUnit, transform);
+        gameObject.AddComponent<AudioListener>();
+    }
+
+    public void Update(Dictionary<int, STile> mTileMap, EInput input)
+    {
+        if      (true == input.HaveFlag(EInput.NONE))     { mState = EMoveState.Stop; }
+        else if (true == input.HaveFlag(EInput.MOVE_ALL)) { mState = EMoveState.Move; }
+
+        switch (mState)
+        {
+            case EMoveState.Move:
+                Vector3 dir = InputMgr.GetInputDirection(input);
+                Move(mTileMap, dir);
+                break;
+            case EMoveState.Stop:
+                StopMove();
+                mState = EMoveState.Idle;
+                break;
+            default:
+                // nothing
+                break;
+        }
+    }
+
     public void Move(Dictionary<int, STile> map, Vector3 dirInput)
     {
         Vector3 position = transform.position;
-
         //직전 이동 방향과 같은 방향이면 시계 방향으로, 그렇지 않다면 반시계 방향으로 탐색한다.
         float sign = Mathf.Sign(Vector3.Cross(dirInput, mDirectionBefore).y) >= 0 ? 1f : -1f;
         for (int i = 0; i < INTERVAL_ROTATION.Length; ++i)
@@ -25,8 +62,7 @@ public class UnitPlayer : UnitBase
             //입력 방향을 회전시킨다.
             Vector3 dirRotated = Quaternion.Euler(0f, sign * INTERVAL_ROTATION[i], 0f) * dirInput;
             dirRotated.Normalize();
-
-            dirRotated *= Time.fixedDeltaTime * SPEED_MOVE * mScale;
+            dirRotated = CMath.FloorToVector(dirRotated * (Time.fixedDeltaTime * SPEED_MOVE * mScale), 3);
             Vector3 goal = CMath.FloorToVector(position + dirRotated, 3);
 
             int keyGoal = TileUtility.GetKeyByPoint(mLayer, /*Vector3*/ goal, mScale);
@@ -64,8 +100,8 @@ public class UnitPlayer : UnitBase
                 }
                 if (true == tileGoal.HasTrigger(ETileTriggerType.Layer, out int layer))
                 {
-                    this.mLayer = layer;
-                    Main.Instance.SetFieldLayer(layer);
+                    mLayer = layer;
+                    Main.GetContent<FieldContent>().SetLayer(layer);
                 }
                 //필드 이벤트는 아직 미구현
                 //if (true == tileMy.HasTrigger(TileTrigger.Event, out int code))
@@ -100,9 +136,15 @@ public class UnitPlayer : UnitBase
                 float x = (0 != dirRotated.x) ? dirRotated.x : mDirectionBefore.x;
                 float z = (0 != dirRotated.z) ? dirRotated.z : mDirectionBefore.z;
                 mDirectionBefore = new Vector3(x, y, z);
+
+                //랜덤 인카운터 ++
+                Main.GetContent<FieldContent>().Encounter(tileGoal.Code);
                 return;
             }
         }
+
+        //만약 이동불가한 경우가 있다면? 부동 소수점 기준을 1자리 올린다. (소수점 3자리 -> 소수점 2자리)
+        transform.position = TileUtility.SnappingPoint(position, Time.fixedDeltaTime * 10f, 2); ;
     }
     public void StopMove()
     {
@@ -120,4 +162,3 @@ public class UnitPlayer : UnitBase
         mAnimeCurrentCode = anime;
     }
 }
-

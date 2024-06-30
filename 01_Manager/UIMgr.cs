@@ -14,17 +14,16 @@ public class UIMgr
             case EGameStateFlag.Opening:
                 string code = AssetMgr.GetAssetAddress(EAssetType.UI, (int)EUIType.Title);
                 GameObject obj = await AssetMgr.InstantiateGameObjectAsync(code, CanvasCamera.transform, false);
-                UITitle title = obj.AddComponent<UITitle>();
+                UIOpening title = obj.AddComponent<UIOpening>();
                 mUICache[(byte)EUIType.Title] = title;
                 break;
-            case EGameStateFlag.Field:
+            case EGameStateFlag.EnterGame:
                 Debug.Log("Need to dev: UI.InitAsync(Field)");
                 break;
         }
     }
     public void Pop(EUIType type, bool isOn)
     {
-        Main.InputMgr.Updater = null;
         mUICache[(byte)type].Pop(isOn);
     }
     public void Release()
@@ -38,13 +37,13 @@ public class UIMgr
                 break;
             }
 
-            mUICache[i].Dispose();
+            mUICache[i].Release();
         }
     }
 
     public UIMgr(Transform transform)
     {
-        mUICache = new UIBase[8]; //¿”¿«∑Œ º≥¡§
+        mUICache = new UIBase[8]; //ÏûÑÏùòÍ∞í
         CanvasOverlay = transform.GetChild(0).GetComponent<Canvas>();
         CanvasCamera  = transform.GetChild(1).GetComponent<Canvas>();
     }
