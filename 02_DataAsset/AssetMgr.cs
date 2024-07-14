@@ -57,26 +57,27 @@ public class AssetMgr
     {
         int index = (byte)type * 10000 + code;
 
-        return index switch
+        switch(index)
         {
-            // Unit
-            01_0001 => "AnimCtrl_Ataho",
-            01_0002 => "AnimCtrl_Linxhang",
-            01_0003 => "AnimeCtrl_Smashu",
+            // Animation Controller
+            case 01_0001: return "AnimCtrl_Ataho";
+            case 01_0002: return "AnimCtrl_Linxhang";
+            case 01_0003: return "AnimeCtrl_Smashu";
+            case 01_0010: return "AnimeCtrl_RedMonkey";
+            case 01_0011: return "AnimeCtrl_BlueWildBoar";
 
             // Content
-            02_0001 => "UnitBase",
-            02_0002 => "OpeningGame",
+            case 02_0001: return "UnitBase";
+            case 02_0002: return "OpeningGame";
 
             // UI
-            03_0000 => "UITitle",
+            case 03_0000: return "UITitle";
 
             // BATTLE MAP
-            04_0000 => "Battle000",
+            case 04_0000: return "Battle000";
+        }
 
-            // Default
-            _ => null,
-        };;
+        return null;
     }
 
     /* Release Asset */

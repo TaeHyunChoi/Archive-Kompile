@@ -2,6 +2,7 @@ using CMathf;
 using DataStruct;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 /// <summary>
@@ -12,7 +13,7 @@ using UnityEngine;
 [SerializeField]
 public static class PlayData
 {
-    public static UnitPartyData[] PartyData { get; set; }
+    public static UnitPartyData[] PartyData { get; set; } //이거 열어두니까 오히려 헷갈리는데? 특히나 length 단어가 혼용됨 흠..
     public static int PartyTier
     {
         get
@@ -28,13 +29,7 @@ public static class PlayData
             return CMath.FloorToInt(((float)tier / length) / 3, exponent: 3) + 1;
         }
     }
-
-    // field
-    public static byte MapCode { get; set; }
-
-    // inventory
-    public static int Gold { get; set; }
-
+    
     public static void LoadData(string dummy)
     {
         if (null != dummy)
@@ -43,7 +38,7 @@ public static class PlayData
         }
         else
         {
-            PartyData = new UnitPartyData[1] { new UnitPartyData(1) };
+            PartyData = new UnitPartyData[] { new UnitPartyData(1) };
         }
     }
 }

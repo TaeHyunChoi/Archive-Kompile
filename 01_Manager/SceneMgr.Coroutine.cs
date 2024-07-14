@@ -1,7 +1,6 @@
-using System.Threading.Tasks;
+using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using static SceneMgr;
 
 public partial class SceneMgr // Coroutine
 {
@@ -9,9 +8,15 @@ public partial class SceneMgr // Coroutine
     {
         private AsyncOperation  mLoadAsyncOper;
         private CanvasGroup     mCurtainCanvas;
-        private Task<OnOpening> mTaskOpening;
-        private Task            mTaskLoadUI;
 
+
+        private CTaskHandler<OnOpening.TaskOpeningInit> mTaskOpeningInit;
+        private CTaskHandler<UIMgr.TaskUILoad>          mTaskUILoad;
+        
+        public IEInitOpeningScene(CanvasGroup curtain)
+        {
+            mCurtainCanvas = curtain;
+        }
         public int MoveNext(int index)
         {
             switch (index)
@@ -29,46 +34,43 @@ public partial class SceneMgr // Coroutine
                     }
                     break;
                 case 3:
-                    Transform transformCameraCanvas = Main.UIMgr.CanvasCamera.transform;
-                    mTaskOpening = OnOpening.InitAsync(transformCameraCanvas);
-                    mTaskLoadUI = Main.UIMgr.InitAsync(EGameStateFlag.Opening);
+                    var taskOpeningInit = new OnOpening.TaskOpeningInit();
+                    mTaskOpeningInit = new CTaskHandler<OnOpening.TaskOpeningInit>(taskOpeningInit);
+
+                    var taskUI = new UIMgr.TaskUILoad(EGameStateFlag.Opening);
+                    mTaskUILoad = new CTaskHandler<UIMgr.TaskUILoad>(taskUI);
                     break;
                 case 4:
-                    if (false == mTaskOpening.IsCompletedSuccessfully
-                        || false == mTaskLoadUI.IsCompletedSuccessfully)
+                    bool isDone = mTaskOpeningInit.IsDone
+                                  & mTaskUILoad.IsDone;
+
+                    if (false == isDone)
                     {
                         return index;
                     }
 
-                    mTaskOpening.Result.Set();
                     mCurtainCanvas.gameObject.SetActive(false);
+                    mTaskOpeningInit.Dispose();
+                    mTaskUILoad.Dispose();
                     break;
                 default:
-                    mTaskOpening.Dispose();
-                    mTaskLoadUI.Dispose();
                     return -1;
             }
 
             return index + 1;
         }
-
-        public IEInitOpeningScene(CanvasGroup curtain)
-        {
-            mCurtainCanvas = curtain;
-        }
     }
     public class IEEnterIngame : IRoutineUpdater
     {
-        private AsyncOperation  mLoadAsyncOper;
-        private Task<FieldContent>   mTaskField;
-        private Task<BattleContent>  mTaskBattle;
-        private Task            mTaskLoadUI;
-
-        //private MapData         mMapData;
-        private int mChapter;
-
         private IECurtainOn  mCurtainOn;
         private IECurtainOff mCurtainOff;
+
+        private AsyncOperation                             mLoadAsyncOper;
+        private CTaskHandler<FieldContent.TaskFieldInit>   mTaskInitField;
+        private CTaskHandler<BattleContent.TaskBattleInit> mTaskInitBattle;
+        private CTaskHandler<UIMgr.TaskUILoad>             mTaskInitUI;
+
+        private int mChapter;
 
         public int MoveNext(int index)
         {
@@ -82,7 +84,6 @@ public partial class SceneMgr // Coroutine
                     {
                         return index;
                     }
-                    mCurtainOn = null;
                     break;
                 case 2:
                     //TODO: dev Mapdata (using grid?)
@@ -106,24 +107,27 @@ public partial class SceneMgr // Coroutine
                     {
                         return index;
                     }
-                    mLoadAsyncOper = null;
                     break;
                 case 4:
-                    mTaskField  = FieldContent.InitAsync();
-                    mTaskBattle = BattleContent.InitAsync(mChapter);
-                    mTaskLoadUI = Main.UIMgr.InitAsync(EGameStateFlag.EnterGame);
+                    var taskField = new FieldContent.TaskFieldInit();
+                    mTaskInitField = new CTaskHandler<FieldContent.TaskFieldInit>(taskField);
+
+                    var taskBattle = new BattleContent.TaskBattleInit(mChapter);
+                    mTaskInitBattle = new CTaskHandler<BattleContent.TaskBattleInit>(taskBattle);
+
+                    var taskUI = new UIMgr.TaskUILoad(EGameStateFlag.EnterGame);
+                    mTaskInitUI = new CTaskHandler<UIMgr.TaskUILoad>(taskUI);
+
                     break;
                 case 5:
-                    if (false == mTaskField.IsCompletedSuccessfully
-                        || false == mTaskBattle.IsCompletedSuccessfully
-                        || false == mTaskLoadUI.IsCompletedSuccessfully)
+                    bool isDone = mTaskInitField.IsDone 
+                                  & mTaskInitBattle.IsDone
+                                  & mTaskInitUI.IsDone;
+
+                    if (false == isDone)
                     {
                         return index;
                     }
-
-                    Main.SetContenData(EContentType.Field,  mTaskField.Result);
-                    Main.SetContenData(EContentType.Battle, mTaskBattle.Result);
-                    Main.SetCurrentContent(EContentType.Field);
                     break;
                 case 6:
                     CoroutineUpdater.SetHandler(new CCoroutine<IECurtainOff>(mCurtainOff));
@@ -133,12 +137,22 @@ public partial class SceneMgr // Coroutine
                     {
                         return index;
                     }
+
+                    //sync
+                    mCurtainOn = null;
                     mCurtainOff = null;
+
+                    //async
+                    mLoadAsyncOper = null;
+                    mTaskInitField.Dispose();
+                    mTaskInitBattle.Dispose();
+                    mTaskInitUI.Dispose();
+
+                    GC.Collect();
+
                     break;
                 default:
-                    mTaskField.Dispose();
-                    mTaskBattle.Dispose();
-                    mTaskLoadUI.Dispose();
+                    Main.SetCurrentContent(EContentType.Field);
                     Main.GetContent<FieldContent>().Start();
                     return -1;
             }

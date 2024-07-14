@@ -4,13 +4,16 @@ using System.Text;
 using System.Collections.Generic;
 using UnityEngine;
 using DataStruct;
+using UnityEngine.UIElements;
+using System;
+using System.Runtime.InteropServices;
 
 public static class DataTable
 {
     /* table */
     public static List<UnitData> UnitTable { get; private set; } = new();
     public static List<MapData>  MapTable  { get; private set; } = new();
-    //...
+
 
     /* I/O binary file */
     public static void WriteTable<T>(string filePath, List<T> dataList) where T : struct, IDataSetter<T>

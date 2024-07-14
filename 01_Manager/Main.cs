@@ -4,7 +4,7 @@ using UnityEngine;
 
 public partial class Main : MonoBehaviour
 {
-    //TODO: FrameRate는 추후에 Config.cs 등에게 넘기기
+    //TODO: FrameRate는 추후에 Config에게 넘기기
     [SerializeField]
     private int mFrameRate = 144;
 
@@ -45,8 +45,8 @@ public partial class Main : MonoBehaviour
     }
     private void Start()
     {
-        SceneMgr.LoadSceneAsync(EGameStateFlag.Opening);
         Application.targetFrameRate = mFrameRate;
+        SceneMgr.LoadSceneAsync(EGameStateFlag.Opening);
     }
 
     //클래스를 명시하고자 <T>를 사용
@@ -102,6 +102,7 @@ public partial class Main : MonoBehaviour
         mCurrentContent?.Update();
 
 #if UNITY_EDITOR || UNITY_EDITOR_64 || UNITY_EDITOR_WIN
+        //frame check
         deltaTime += (Time.deltaTime - deltaTime) * 0.1f;
 #endif
     }

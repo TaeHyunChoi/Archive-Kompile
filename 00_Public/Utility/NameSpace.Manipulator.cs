@@ -12,7 +12,6 @@ namespace CManipulator
 
             while (countWritten < size)
             {
-                //데이터를 작성할 배열 중 인덱스, 작성할 비트 인덱스를 구한다.
                 int byteCurrent    = array[indexArray];
                 int bitsLeftInByte = 8 - bitStart;
                 int bitsToWrite = Math.Min(bitsLeftInByte, size - countWritten);
@@ -23,13 +22,12 @@ namespace CManipulator
                 //남은 비트만큼 밀어넣고
                 array[indexArray] = (byte)((byteCurrent & ~(mask << bitStart)) | ((value >> countWritten) & mask) << bitStart);
 
-                //인덱스 등을 갱신한 후 다음 배열 인덱스로 넘어간다.
+                //인덱스 등을 갱신한 후 다음 byte[] 으로 넘어간다.
                 countWritten += bitsToWrite;
                 bitStart = 0;
                 indexArray++;
             }
         }
-
         public static int ReadBits(byte[] data, int bitIndex, int bitCount)
         {
             int byteIndex = bitIndex / 8;
@@ -47,7 +45,7 @@ namespace CManipulator
                 result |= ((currentByte >> startBit) & mask) << bitsRead;
 
                 bitsRead += bitsToRead;
-                startBit = 0;
+                startBit = 0; // For subsequent bytes, start at the beginning
                 byteIndex++;
             }
 

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 public interface IDataSetter<T> where T : struct
 {
@@ -19,6 +20,10 @@ public interface IRoutineUpdater
     public int MoveNext(int index);
 }
 
+public interface ITaskUpdater
+{
+    public Task<bool> Await();
+}
 public interface IInputHandler
 {
     public void Input(Index.IDxInput.EInput input);

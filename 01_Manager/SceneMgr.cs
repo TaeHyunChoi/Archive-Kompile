@@ -17,6 +17,7 @@ public partial class SceneMgr
                 break;
             case EGameStateFlag.EnterGame:
                 //TODO: Load(or Get) Play data. => chaper: 
+
                 IEEnterIngame level = new IEEnterIngame(chapter: 0);
                 CoroutineUpdater.SetHandler(new CCoroutine<IEEnterIngame>(level));
                 break;
