@@ -101,7 +101,6 @@ namespace DataStruct
         /// </summary>
         public byte[] StatBaseBits { get; set; }
 
-
         /* interface: IDataSetter */
 #if UNITY_EDITOR || UNITY_EDITOR_64 || UNITY_EDITOR_WIN
         public void SetByCSV(Dictionary<string, string> dataCSV)
@@ -150,7 +149,6 @@ namespace DataStruct
             RcsCode      = reader.ReadString();
             StatBaseBits = reader.ReadBytes(reader.ReadInt32());
         }
-
 
         /* set stat in battle */
         public byte[] SetBattleStat(int level)

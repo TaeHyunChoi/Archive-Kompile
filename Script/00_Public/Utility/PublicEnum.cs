@@ -20,9 +20,9 @@ public enum ESceneState : byte
 }
 public enum EUnitType : byte
 { 
-    Party = 0,
-    Enemy = 1,
-    NPC   = 2,
+    Party = 00,
+    Enemy = 10,
+    NPC   = 20,
 }
 public enum EStat
 { 

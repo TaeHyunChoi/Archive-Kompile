@@ -10,7 +10,17 @@ public partial class OnOpening // Coroutine
         private float mWaitTime;
         private float mAlpha;
         private int   mState;
+        public IEOpeningLogo(Transform transform)
+        {
+            transform.gameObject.SetActive(true);
+            mLogoImage = transform.GetComponent<Image>();
+            //imageLogo.color = new Color(1f, 1f, 1f, 0f);
+            mAlpha = 0;
+            mWaitTime = 0;
+            mState = 0;
 
+            Main.SetInput(this);
+        }
         public int MoveNext(int index)
         {
             if (mState != index)
@@ -67,20 +77,13 @@ public partial class OnOpening // Coroutine
                 mState = 2;
             }
         }
-        public IEOpeningLogo(Transform transform)
-        {
-            transform.gameObject.SetActive(true);
-            mLogoImage = transform.GetComponent<Image>();
-            //imageLogo.color = new Color(1f, 1f, 1f, 0f);
-            mAlpha = 0;
-            mWaitTime = 0;
-            mState = 0;
-
-            Main.SetInput(this);
-        }
     }
     private class IEOpeningDemo : IRoutineUpdater, IInputHandler
     {
+        public IEOpeningDemo(Transform transform)
+        {
+            Debug.Log("Need to dev: Play Demo");
+        }
         public int MoveNext(int index)
         {
             instance.Set();
@@ -89,10 +92,6 @@ public partial class OnOpening // Coroutine
         public void Input(EInput input)
         {
 
-        }
-        public IEOpeningDemo(Transform transform)
-        {
-            Debug.Log("Need to dev: Play Demo");
         }
     }
     private class IEOpeningTitle : IRoutineUpdater
@@ -108,6 +107,29 @@ public partial class OnOpening // Coroutine
         private float mDist;
         private float mAlpah = 0;
 
+        public IEOpeningTitle(Transform transform)
+        {
+            mRects = new RectTransform[2];
+            mPositions = new Vector2[2];
+            mDist = mLogoSpeed * mMovingTime;
+
+            //all images.alpha = 0f;
+            mImages = transform.GetComponentsInChildren<Image>();
+            for (int i = 0; i < mImages.Length; ++i)
+            {
+                mImages[i].color = new Color(1f, 1f, 1f, 0f);
+            }
+
+            //logo_upper
+            mRects[0] = mImages[0].GetComponent<RectTransform>();
+            mRects[0].anchoredPosition = new Vector3(mRects[0].anchoredPosition.x, mRects[0].anchoredPosition.y + mDist);
+            mPositions[0] = mRects[0].anchoredPosition;
+
+            //logo_lower
+            mRects[1] = mImages[1].GetComponent<RectTransform>();
+            mRects[1].anchoredPosition = new Vector3(mRects[1].anchoredPosition.x, mRects[1].anchoredPosition.y - mDist);
+            mPositions[1] = mRects[1].anchoredPosition;
+        }
         public int MoveNext(int index)
         {
             switch (index)
@@ -151,29 +173,6 @@ public partial class OnOpening // Coroutine
             }
 
             return index + 1;
-        }
-        public IEOpeningTitle(Transform transform)
-        {
-            mRects = new RectTransform[2];
-            mPositions = new Vector2[2];
-            mDist = mLogoSpeed * mMovingTime;
-
-            //all images.alpha = 0f;
-            mImages = transform.GetComponentsInChildren<Image>();
-            for (int i = 0; i < mImages.Length; ++i)
-            {
-                mImages[i].color = new Color(1f, 1f, 1f, 0f);
-            }
-
-            //logo_upper
-            mRects[0] = mImages[0].GetComponent<RectTransform>();
-            mRects[0].anchoredPosition = new Vector3(mRects[0].anchoredPosition.x, mRects[0].anchoredPosition.y + mDist);
-            mPositions[0] = mRects[0].anchoredPosition;
-
-            //logo_lower
-            mRects[1] = mImages[1].GetComponent<RectTransform>();
-            mRects[1].anchoredPosition = new Vector3(mRects[1].anchoredPosition.x, mRects[1].anchoredPosition.y - mDist);
-            mPositions[1] = mRects[1].anchoredPosition;
         }
     }
 }

@@ -4,7 +4,7 @@ using UnityEngine;
 using DataStruct;
 using UnityEngine.SceneManagement;
 
-public class FieldContent : ContentBase, IInputHandler
+public partial class FieldContent : ContentBase, IInputHandler
 {
     private Dictionary<int, STile> mTileMap;
 
@@ -20,19 +20,6 @@ public class FieldContent : ContentBase, IInputHandler
     private int mMaxEncounterValue = 200;
     private int mEncounterValue;
 
-    public static async Task<FieldContent> InitAsync()
-    {
-        Transform level = GameObject.FindWithTag("Field").transform;
-        FieldContent field = new FieldContent(level);
-
-        Debug.Log("For Test: Set Player");
-        //TODO: Player "Group"이 움직일 수 있도록 개발 필요
-        field.player = await AssetMgr.SpawnUnit<UnitPlayer>(PlayData.PartyData[0].UnitCode, level.Find("Unit"));
-        field.player.transform.position = new Vector3(0.5f, 0f, 0.5f);
-        field.SetLayer(0);
-        
-        return field;
-    }
     private FieldContent(Transform level)
     {
         Debug.Log("Test Map: 000_FieldTest");
@@ -44,6 +31,7 @@ public class FieldContent : ContentBase, IInputHandler
     {
         Main.SetInput(this);
     }
+
 
     public void SetLayer(int layerOn)
     {
@@ -86,8 +74,9 @@ public class FieldContent : ContentBase, IInputHandler
     }
     public override void Update()
     {
+        //not_yet
         //field.Update()가 필요할 수 있다.
-        //ex. update npc behaviour 
+        //ex. npc behaviour
     }
     public override void FixedUpdate()
     {

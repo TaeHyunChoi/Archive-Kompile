@@ -14,67 +14,127 @@ public partial class BattleContent : ContentBase
 
     private int mLengthInBattle;
 
-    /* initialize */
-    public static async Task<BattleContent> InitAsync(int chapter)
-    {
-        BattleContent battle = new BattleContent(transform: Main.Instance.transform.Find("Battle"));
-
-        string code;
-        GameObject map;
-        for (int i = 0; i < COUNT_MAP; ++i)
-        {
-            code = AssetMgr.GetAssetAddress(EAssetType.BattleMap, chapter * 100 + i);
-            map = await AssetMgr.InstantiateGameObjectAsync(code, battle.transform, false);
-
-            if (null != map)
-            {
-                battle.mBattleMapArray[i] = map.transform.GetComponent<BattleMapComponent>();
-            }
-        }
-
-        return battle;
-    }
-
     /* set battle */
-    public void Set(int mapCode, Vector3 lastPosition)
+    public void Set(int codeMap, Vector3 position)
     {
         // 전투맵 설정
-        if (false == DataTable.TryGetMapData(mapCode, out MapData dataMap))
+        if (false == DataTable.TryGetMapData(codeMap, out MapData dataMap))
         {
-            Debug.LogError("null map_data: " + mapCode);
+            Debug.LogError("null map_data: " + codeMap);
             return;
         }
+        transform.position = position;
 
-        Vector3 pos = lastPosition;
+        BattleMapComponent map;
         for (int i = 0; i < COUNT_MAP; ++i)
         {
-            bool isActive = (mapCode == mBattleMapArray[i].Code);
-
-            mBattleMapArray[i].SetActive(isActive);
-            if (true == isActive)
+            map = mBattleMapArray[i];
+            if (null != map)
             {
-                pos = mBattleMapArray[i].Position;
-                break;
+                map.SetActive(isOn: codeMap == map.Code);
             }
         }
 
         int index;
+        int lengthParty;
 
+        // set party
         UnitPartyData party;
-        for (index = 0; index < PlayData.PartyData.Length; ++index)
+        lengthParty = PlayData.PartyData.Length;
+        for (index = 0; index < lengthParty; ++index)
         {
             party = PlayData.PartyData[index];
             mBattleUnitArray[index] = new UnitBattle(party.UnitData, party.Level, mUnitTransformArray[index]);
         }
+        party = null;
 
-        SelectEnemiesByRandom(dataMap, indexStart: index, mBattleUnitArray, out  mLengthInBattle);
+        // set enemies
+        SelectEnemiesByRandom(dataMap, indexStart: index, mBattleUnitArray, out mLengthInBattle);
 
-        //TODO: battle_map 상에서의 각 포지션 설정
-        //SetUnitPosition(null);
+        // set
+        SetUnits(mBattleUnitArray, lengthParty, mLengthInBattle - lengthParty);
+
+        // 
 
         // 현재 콘텐츠로 설정
-        Main.Cam.transform.position = pos + new Vector3(0, 3f, -2f);
+        Main.Cam.transform.position = position + new Vector3(0, 3f, -2f);
         Main.SetCurrentContent(EContentType.Battle);
+    }
+    private void SetUnits(UnitBattle[] array, int lengthParty, int lengthEnemy)
+    {
+        float x, z;
+        float sx, sz;
+
+        int index;
+        
+        index = 0;
+        x = -2f;
+        z = 0.6f;
+
+        switch (lengthParty)
+        {
+            case 1:
+                mBattleUnitArray[index].SetBattle(new Vector3(x, 0, z));
+                break;
+            case 2:
+                sx = 0.15f;
+                sz = 0.3f;
+                mBattleUnitArray[index].SetBattle(new Vector3(x + sx, 0, z + sz));
+                mBattleUnitArray[index + 1].SetBattle(new Vector3(x - sx, 0, z - sz));
+                break;
+            case 3:
+                sx = 0.45f;
+                sz = 0.6f;
+                mBattleUnitArray[index].SetBattle(new Vector3(x + sx, 0, z + sz));
+                mBattleUnitArray[index + 1].SetBattle(new Vector3(x, 0, z));
+                mBattleUnitArray[index + 2].SetBattle(new Vector3(x - sz, 0, z - sz));
+                break;
+            default:
+                {
+#if UNITY_EDITOR || UNITY_EDITOR_64 || UNITY_EDITOR_WIN
+                    Debug.LogError("wrong party length");
+#endif                
+                }
+                return;
+        }
+
+        index = lengthParty;
+        x = 2f;
+        switch (lengthEnemy)
+        {
+            case 1:
+                mBattleUnitArray[index].SetBattle(new Vector3(x, 0, z));
+                break;
+            case 2:
+                sx = 0.15f;
+                sz = 0.25f;
+                mBattleUnitArray[index].SetBattle(new Vector3(x - sx, 0, z + sz));
+                mBattleUnitArray[index + 1].SetBattle(new Vector3(x + sx, 0, z - sz));
+                break;
+            case 3:
+                sx = 0.45f;
+                sz = 0.6f;
+                mBattleUnitArray[index].SetBattle(new Vector3(x - sx, 0, z + sz));
+                mBattleUnitArray[index + 1].SetBattle(new Vector3(x, 0, z));
+                mBattleUnitArray[index + 2].SetBattle(new Vector3(x + sz, 0, z - sz));
+                break;
+            case 4:
+                z = 0f;
+                sx = 0.45f;
+                sz = 0.5f;
+                mBattleUnitArray[index].SetBattle(new Vector3(x - sx * 2, 0, z + sz * 2));
+                mBattleUnitArray[index + 1].SetBattle(new Vector3(x - sx, 0, z + sz));
+                mBattleUnitArray[index + 2].SetBattle(new Vector3(x, 0, z));
+                mBattleUnitArray[index + 3].SetBattle(new Vector3(x + sx, 0, z - sz));
+                break;
+            default:
+                {
+#if UNITY_EDITOR || UNITY_EDITOR_64 || UNITY_EDITOR_WIN
+                    Debug.LogError("wrong party length");
+#endif                
+                }
+                return;
+        }
     }
 
     private void SelectEnemiesByRandom(MapData mapData, int indexStart, UnitBattle[] arrayUnit, out int length)
@@ -132,17 +192,17 @@ public partial class BattleContent : ContentBase
     }
 
 
+
     public override void Start()
     {
         Main.ClearInput();
-        Debug.Log($"TODO Dev: Set Battle");
     }
     public override void Release()
     {
         mBattleUnitArray = null;
     }
 
-    //TODO: 콘텐츠 관련 설계를 변경할 예정 (만들고 나니 ContentBase가 쓸모 없다.)
+
     public override void Update()
     {
         //not_used
@@ -167,4 +227,95 @@ public partial class BattleContent : ContentBase
         mBattleUnitArray = new UnitBattle[COUNT_MAX_UNIT];
         mBattleMapArray = new BattleMapComponent[COUNT_MAP];
     }
+
+    /* maybe later? */
+    //private void SetUnitPosition(UnitBattle pawn)
+    //{
+    //    for (int i = 0; i < mBattleUnitArray.Length; ++i)
+    //    {
+    //        pawn = mBattleUnitArray[i];
+    //        switch (i)
+    //        {
+    //            // party
+    //            case 0: pawn.transform.position = pos + new Vector3(-0.900f - 1f, 0, +1.200f); break;
+    //            case 1: pawn.transform.position = pos + new Vector3(-1.200f - 1f, 0, +0.400f); break;
+    //            case 2: pawn.transform.position = pos + new Vector3(-1.500f - 1f, 0, -0.400f); break;
+
+    //            //enemy
+    //            case 3: pawn.transform.position = pos + new Vector3(+2.000f - 0.3f, 0, +1.500f); break;
+    //            case 4: pawn.transform.position = pos + new Vector3(+2.200f - 0.3f, 0, +0.900f); break;
+    //            case 5: pawn.transform.position = pos + new Vector3(+2.400f - 0.3f, 0, +0.300f); break;
+    //            case 6: pawn.transform.position = pos + new Vector3(+2.600f - 0.3f, 0, -0.300f); break;
+    //        }
+    //        pawn.gameObject.SetActive(true);
+    //    }
+    //}
+    //private void SelectEnemiesByRandom(MapData mapData, out UnitBattle[] enemies, out int length)
+    //{
+    //    length = Random.Range(1, mapData.MaxENMCount);
+    //    enemies = new UnitBattle[length];
+
+    //    //언더바 사용(_): 개념을 아직 구현하지 않았음
+    //    int player_tier = PlayData.PartyTier;
+    //    int map_tier_sum = 2;
+
+    //    int tierSumMax = (map_tier_sum > player_tier) ? player_tier * 2 : map_tier_sum;
+    //    int tierSum = 0;
+
+    //    int index = 0;
+    //    int map_monster_type_length = mapData.EnemyTypeArray.Length;
+
+    //    while (tierSum < tierSumMax && index++ < length)
+    //    {
+    //        int indexRandom = Random.Range(0, map_monster_type_length);
+    //        if (true == DataTable.TryGetUnitData(mapData.EnemyTypeArray[indexRandom], out UnitData enemyData))
+    //        {
+    //            //int tier = enemyData.Tier;
+    //            /* tier가 왜 0임? */
+    //            int enemy_tier = enemyData.Tier;
+    //            if (tierSum + enemy_tier < tierSumMax)
+    //            {
+    //                tierSum += enemy_tier;
+    //            }
+    //        }
+    //        else if (false == TryGetOtherEnemy(tierSumMax - tierSum, out enemyData))
+    //        {
+    //            //할당 가능한 티어가 없다면 반복문(탐색) 종료
+    //            break;
+    //        }
+    //        else
+    //        {
+    //            // '그런 유닛 코드는 존재하지 않는다'
+    //            Debug.LogError("Wrong unit code");
+    //            return;
+    //        }
+
+    //        //UnitBattle을 초기화 할 때에 스탯, 모드 등을 일괄 설정한다.
+    //        //아하,, 이거 어렵네?
+    //        //enemies[index] = new UnitBattle(enemyData);
+
+    //        //count == 1 인데 tier가 많이 남았다면 1번 더 뽑는 것도 좋을텐데
+    //        //추가 조건이니까 잠시 보류.
+    //    }
+    //}
+    //private void SelectEnemiesByAscend(MapData mapData, out UnitBattle[] enemies, out int length)
+    //{
+    //    enemies = new UnitBattle[4];
+    //    length = 0;
+    //}
+    //private void SelectEnemiesByDescend(MapData mapData, out UnitBattle[] enemies, out int length)
+    //{
+    //    enemies = new UnitBattle[4];
+    //    length = 0;
+    //}
+    //private void SelectEnemiesByTopRated(MapData mapData, out UnitBattle[] enemies, out int length)
+    //{
+    //    enemies = new UnitBattle[4];
+    //    length = 0;
+    //}
+    //private void SelectEnemiesByLowRated(MapData mapData, out UnitBattle[] enemies, out int length)
+    //{
+    //    enemies = new UnitBattle[4];
+    //    length = 0;
+    //}
 }

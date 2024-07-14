@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using UnityEngine;
 
-public class UIMgr
+public partial class UIMgr
 {
     private UIBase[] mUICache;
     public Canvas CanvasOverlay { get; private set; }
@@ -43,7 +43,7 @@ public class UIMgr
 
     public UIMgr(Transform transform)
     {
-        mUICache = new UIBase[8]; //임의값
+        mUICache = new UIBase[8]; //���Ƿ� ����
         CanvasOverlay = transform.GetChild(0).GetComponent<Canvas>();
         CanvasCamera  = transform.GetChild(1).GetComponent<Canvas>();
     }

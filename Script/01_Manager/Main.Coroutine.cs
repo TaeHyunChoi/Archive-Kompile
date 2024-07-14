@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using static SceneMgr;
 
@@ -7,13 +5,21 @@ public partial class Main // Coroutine
 {
     public class IEBattleEnter : IRoutineUpdater
     {
-        private IECurtainOn mCurtainOn;
+        private IECurtainOn  mCurtainOn;
         private IECurtainOff mCurtainOff;
 
         private Vector3 mMapPosition;
-        private float mTimeWait = 0.10f;
-        private int mMapCode;
+        private float   mTimeWait = 0.10f;
+        private int     mMapCode;
 
+        public IEBattleEnter(int mapCode, Vector3 mapPosition)
+        {
+            mMapCode = mapCode;
+            mMapPosition = mapPosition;
+
+            mCurtainOn  = new IECurtainOn(speedMultiple: 2f);
+            mCurtainOff = new IECurtainOff();
+        }
         public int MoveNext(int index)
         {
             switch (index)
@@ -50,22 +56,15 @@ public partial class Main // Coroutine
                     {
                         return index;
                     }
+
+                    mCurtainOn  = null;
+                    mCurtainOff = null;
                     break;
                 default:
                     return -1;
             }
 
-
             return index + 1;
-        }
-
-        public IEBattleEnter(int mapCode, Vector3 mapPosition)
-        {
-            this.mMapCode = mapCode;
-            this.mMapPosition = mapPosition;
-
-            mCurtainOn = new IECurtainOn(speedMultiple: 2f);
-            mCurtainOff = new IECurtainOff();
         }
     }
 }
